@@ -1,0 +1,6 @@
+# Proteksi direktori sensitif
+RedirectMatch 403 ^/(data|backups)/.*$
+<FilesMatch "^(config\.php|database\.php|helpers\.php|install\.php|\.htaccess)$">
+  # install.php boleh diakses saat setup; hapus/kunci setelah produksi
+</FilesMatch>
+Options -Indexes

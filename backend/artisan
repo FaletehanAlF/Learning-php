@@ -1,0 +1,66 @@
+<?php
+// artisan — CLI ala Laravel: php artisan migrate | php artisan serve [--port=8000]
+declare(strict_types=1);
+
+define('BASE_PATH', __DIR__);
+date_default_timezone_set('Asia/Jakarta');
+
+// Auto-reload dengan ekstensi PDO bila driver belum aktif (instalasi PHP minimal).
+if (!in_array('sqlite', PDO::getAvailableDrivers(), true) && !in_array('mysql', PDO::getAvailableDrivers(), true)) {
+    $extDir = getenv('PHP_EXT_DIR') ?: 'C:\php-8.5.9\ext';
+    if (is_dir($extDir)) {
+        $php = PHP_BINARY;
+        $args = ['-d', "extension_dir=$extDir", '-d', 'extension=pdo_sqlite', '-d', 'extension=pdo_mysql', '-d', 'extension=sqlite3', '-d', 'extension=mbstring'];
+        $cmd = escapeshellarg($php) . ' ' . implode(' ', array_map('escapeshellarg', $args)) . ' ' . escapeshellarg(__FILE__);
+        foreach (array_slice($_SERVER['argv'] ?? [], 1) as $a) {
+            $cmd .= ' ' . escapeshellarg($a);
+        }
+        passthru($cmd, $code);
+        exit($code);
+    }
+}
+
+require BASE_PATH . '/app/Core/Env.php';
+Env::load(BASE_PATH);
+if (!is_file(BASE_PATH . '/.env')) {
+    copy(BASE_PATH . '/.env.example', BASE_PATH . '/.env');
+    echo ".env dibuat dari .env.example — sesuaikan bila perlu.\n";
+}
+require BASE_PATH . '/app/Core/Database.php';
+
+$cmd = $argv[1] ?? 'list';
+
+if ($cmd === 'migrate') {
+    Database::migrate();
+    $seeded = Database::seedUsers();
+    echo 'OK [driver=' . Database::driver() . "] migrate selesai.\n";
+    if ($seeded) {
+        echo "Akun default:\n";
+        foreach ($seeded as [$u, $e, $p, $r]) {
+            echo "  - $u / $e / $p ($r)\n";
+        }
+    } else {
+        echo "Seed dilewati (users sudah ada).\n";
+    }
+    exit(0);
+}
+
+if ($cmd === 'serve') {
+    $port = 8000;
+    foreach (array_slice($argv, 2) as $a) {
+        if (str_starts_with($a, '--port=')) {
+            $port = (int) substr($a, 7);
+        }
+    }
+    echo "Kas API: http://127.0.0.1:$port  (docroot backend/public)\n";
+    $extDir = getenv('PHP_EXT_DIR') ?: 'C:\php-8.5.9\ext';
+    $extra = is_dir($extDir)
+        ? ['-d', "extension_dir=$extDir", '-d', 'extension=pdo_sqlite', '-d', 'extension=pdo_mysql', '-d', 'extension=sqlite3', '-d', 'extension=mbstring', '-d', 'extension=fileinfo']
+        : [];
+    $full = array_merge([PHP_BINARY], $extra, ['-S', "127.0.0.1:$port", '-t', BASE_PATH . '/public']);
+    $descriptors = [STDIN, STDOUT, STDERR];
+    $proc = proc_open(array_map('escapeshellarg', $full), $descriptors, $pipes);
+    exit(is_resource($proc) ? proc_close($proc) : 1);
+}
+
+echo "Pakai: php artisan migrate | php artisan serve [--port=8000]\n";

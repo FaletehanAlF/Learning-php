@@ -59,7 +59,7 @@ if ($cmd === 'serve') {
         : [];
     $full = array_merge([PHP_BINARY], $extra, ['-S', "127.0.0.1:$port", '-t', BASE_PATH . '/public']);
     $descriptors = [STDIN, STDOUT, STDERR];
-    $proc = proc_open(array_map('escapeshellarg', $full), $descriptors, $pipes);
+    $proc = proc_open($full, $descriptors, $pipes);
     exit(is_resource($proc) ? proc_close($proc) : 1);
 }
 

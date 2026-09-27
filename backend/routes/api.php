@@ -8,7 +8,8 @@ $adminKasir = Middleware::role('admin', 'kasir');
 $adminSpv = Middleware::role('admin', 'supervisor');
 
 $router->post('/api/__debug', function (Request $req) {
-    Response::json(['method' => $req->method, 'headers' => $req->headers, 'body' => $req->body, 'raw_len' => strlen((string) file_get_contents('php://input'))]);
+    $raw = (string) file_get_contents('php://input');
+    Response::json(['raw' => $raw, 'json_err' => json_last_error_msg(), 'body' => $req->body]);
 });
 $router->post('/api/auth/login', [AuthController::class, 'login']);
 $router->post('/api/auth/forgot', [AuthController::class, 'forgot']);

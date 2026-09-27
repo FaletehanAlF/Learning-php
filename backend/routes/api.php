@@ -7,7 +7,9 @@ $admin = Middleware::role('admin');
 $adminKasir = Middleware::role('admin', 'kasir');
 $adminSpv = Middleware::role('admin', 'supervisor');
 
-// Auth (publik)
+$router->post('/api/__debug', function (Request $req) {
+    Response::json(['method' => $req->method, 'headers' => $req->headers, 'body' => $req->body, 'raw_len' => strlen((string) file_get_contents('php://input'))]);
+});
 $router->post('/api/auth/login', [AuthController::class, 'login']);
 $router->post('/api/auth/forgot', [AuthController::class, 'forgot']);
 $router->post('/api/auth/reset', [AuthController::class, 'reset']);
